@@ -1,0 +1,102 @@
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
+import { fetchImages } from './pixabay-api.js';
+
+// Елемент для відображення завантажувача
+const loader = document.getElementById('loader');
+
+// Описаний у документації
+document
+  .getElementById('search-form')
+  .addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const query = document.getElementById('search-input').value.trim();
+
+    if (!query) {
+      iziToast.error({
+        title: 'Error',
+        message: 'Please enter a search term!',
+      });
+      return;
+    }
+
+    // Показуємо завантажувач перед початком запиту
+      loader.style.display = 'block';
+      
+    try {
+      // Виконуємо HTTP-запит для отримання зображень
+      const images = await fetchImages(query);
+
+      // Показуємо зображення
+      displayImages(images);
+    } catch (error) {
+      console.error('Error fetching images:', error);
+      iziToast.error({
+        title: 'Error',
+        message: 'Failed to fetch images. Please try again later.',
+      });
+    } finally {
+      // Ховаємо завантажувач після завершення запиту (незалежно від результату)
+      loader.style.display = 'none';
+    }
+  });
+
+// Створюємо SimpleLightbox
+const lightbox = new SimpleLightbox('.image-link');
+
+// Функція для відображення зображень
+export function displayImages(images) {
+  const gallery = document.getElementById('gallery');
+  // Повністю очищаємо вміст галереї перед додаванням нових зображень
+  gallery.innerHTML = '';
+
+  if (images.length === 0) {
+    // Показуємо повідомлення про порожній результат пошуку
+    iziToast.error({
+      title: 'Error',
+      message:
+        'Sorry, there are no images matching your search query. Please try again!',
+    });
+    return;
+  }
+
+  // Додаємо картки зображень до галереї
+  images.forEach(image => {
+    const card = `
+      <a href="${image.largeImageURL}" class="image-link">
+        <div class="card">
+          <img src="${image.webformatURL}" alt="${image.tags}">
+          <div class="card-info">
+            <div class="info-item">
+              <p>Likes</p>
+              <span>${image.likes}</span>
+            </div>
+            <div class="info-item">
+              <p>Views</p>
+              <span>${image.views}</span>
+            </div>
+            <div class="info-item">
+              <p>Comments</p>
+              <span>${image.comments}</span>
+            </div>
+            <div class="info-item">
+              <p>Downloads</p>
+              <span>${image.downloads}</span>
+            </div>
+          </div>
+        </div>
+      </a>
+    `;
+    gallery.insertAdjacentHTML('beforeend', card);
+  });
+
+  // Оновлюємо SimpleLightbox після додавання нових елементів та відкриваємо галерею
+  lightbox.refresh();
+}
+
+// Відкриваємо галерею при завантаженні сторінки
+document.addEventListener('DOMContentLoaded', function () {
+  lightbox.refresh();
+});
