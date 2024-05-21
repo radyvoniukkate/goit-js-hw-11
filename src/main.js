@@ -1,7 +1,14 @@
 import { displayImages } from './js/render-functions.js';
 import { fetchImages } from './js/pixabay-api.js';
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
+// Елемент для відображення завантажувача
+const loader = document.getElementById('loader');
 
+// Описаний у документації
 document
   .getElementById('search-form')
   .addEventListener('submit', async function (event) {
@@ -16,16 +23,29 @@ document
       return;
     }
 
+    // Показуємо завантажувач перед початком запиту
+    loader.style.display = 'block';
+
     try {
+      // Виконуємо HTTP-запит для отримання зображень
       const images = await fetchImages(query);
-      // Викликаємо функцію для відображення отриманих зображень у галереї
+      console.log('Images fetched', images);
+
+      // Показуємо зображення
       displayImages(images);
     } catch (error) {
-      // Обробка помилок
       console.error('Error fetching images:', error);
+      iziToast.error({
+        title: 'Error',
+        message: 'Failed to fetch images. Please try again later.',
+      });
+    } finally {
+      // Ховаємо завантажувач після завершення запиту (незалежно від результату)
+      loader.style.display = 'none';
     }
   });
 
-  document.addEventListener('DOMContentLoaded', function () {
-    new SimpleLightbox('.image-link');
-  });
+// Створюємо SimpleLightbox після завантаження документа
+document.addEventListener('DOMContentLoaded', function () {
+  new SimpleLightbox('.image-link');
+});
